@@ -1,6 +1,7 @@
 package controller;
 
 import dao.TransactionDAO;
+import dao.TransactionRepository;
 import model.Product;
 import model.Transaction;
 
@@ -11,10 +12,17 @@ import java.util.ArrayList;
 // seperti menghitung total harga.
 public class TransactionController {
 
-    private TransactionDAO transactionDAO;
+    // DEPENDENCY INVERSION: bergantung pada interface, bukan kelas konkret.
+    private TransactionRepository transactionDAO;
 
+    // Constructor biasa: pakai TransactionDAO (database) secara default.
     public TransactionController() {
-        transactionDAO = new TransactionDAO();
+        this.transactionDAO = new TransactionDAO();
+    }
+
+    // OVERLOADING constructor (Polymorphism): bisa diberi sumber data lain.
+    public TransactionController(TransactionRepository repository) {
+        this.transactionDAO = repository;
     }
 
     // Logika bisnis: menghitung total harga = harga produk x jumlah beli.

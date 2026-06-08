@@ -12,7 +12,8 @@ import java.util.ArrayList;
 
 // DAO khusus tabel "transactions".
 // Tugasnya hanya berurusan dengan database untuk data transaksi.
-public class TransactionDAO {
+// "implements TransactionRepository" = kelas ini memenuhi kontrak interface tersebut.
+public class TransactionDAO implements TransactionRepository {
 
     private Connection conn;
 

@@ -13,7 +13,8 @@ import java.util.ArrayList;
 // DAO = Data Access Object.
 // Tugasnya HANYA satu: berurusan dengan database untuk tabel "products".
 // Semua perintah SQL produk berkumpul di sini, jadi Controller tidak perlu tahu soal SQL.
-public class ProductDAO {
+// "implements ProductRepository" = kelas ini berjanji menyediakan semua method di interface itu.
+public class ProductDAO implements ProductRepository {
 
     private Connection conn;
 

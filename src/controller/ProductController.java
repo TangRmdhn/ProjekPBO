@@ -1,6 +1,7 @@
 package controller;
 
 import dao.ProductDAO;
+import dao.ProductRepository;
 import model.Product;
 import model.ProductFactory;
 
@@ -12,10 +13,19 @@ import java.util.ArrayList;
 // Controller TIDAK menulis SQL (itu tugas DAO) dan TIDAK mengurus tampilan (itu tugas View).
 public class ProductController {
 
-    private ProductDAO productDAO;
+    // DEPENDENCY INVERSION: tipe field-nya interface (ProductRepository),
+    // bukan kelas konkret (ProductDAO). Controller tidak peduli datanya disimpan di mana.
+    private ProductRepository productDAO;
 
+    // Constructor biasa: pakai ProductDAO (database) secara default.
     public ProductController() {
-        productDAO = new ProductDAO();
+        this.productDAO = new ProductDAO();
+    }
+
+    // OVERLOADING constructor (Polymorphism): nama sama, parameter beda.
+    // Berguna untuk mengganti sumber data, misal saat testing.
+    public ProductController(ProductRepository repository) {
+        this.productDAO = repository;
     }
 
     // Membuat objek Product dari data mentah form.

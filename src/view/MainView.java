@@ -338,7 +338,9 @@ public class MainView extends JFrame {
         // jadi nanti produk yang dipilih bisa diambil lewat nomor urut (index).
         daftarProdukCombo = productController.ambilSemuaProduk();
         for (Product p : daftarProdukCombo) {
-            cbPilihProduk.addItem(p.getNamaProduk() + " (Stok: " + p.getStok() + ") - Rp" + p.getHarga());
+            // POLYMORPHISM: getProductInfo() otomatis memanggil versi FoodProduct
+            // atau DrinkProduct sesuai jenis objek aslinya, walau tipenya Product.
+            cbPilihProduk.addItem(p.getProductInfo() + " | Stok: " + p.getStok());
         }
     }
 

@@ -11,6 +11,8 @@ public class DrinkProduct extends Product {
     // Penerapan Polymorphism (Overriding)
     @Override
     public String getProductInfo() {
-        return "[Minuman] " + namaProduk + " seharga Rp " + harga;
+        // Pakai getter (getNamaProduk/getHarga), bukan akses field langsung,
+        // karena field di superclass sekarang private (Encapsulation).
+        return "[Minuman] " + getNamaProduk() + " seharga Rp " + getHarga();
     }
 }

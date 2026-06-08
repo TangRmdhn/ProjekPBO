@@ -2,12 +2,14 @@ package model;
 
 // Class Induk (Superclass) yang menerapkan konsep Encapsulation dan Abstraksi
 public abstract class Product {
-    // Modifier private atau protected untuk membungkus data
-    protected int idProduk;
-    protected String namaProduk;
-    protected double harga;
-    protected int stok;
-    protected String kategori;
+    // ENCAPSULATION: semua data dibungkus dengan modifier "private",
+    // jadi tidak bisa diakses langsung dari luar. Akses hanya lewat getter/setter.
+    // Class anak (FoodProduct/DrinkProduct) pun harus pakai getter, bukan akses langsung.
+    private int idProduk;
+    private String namaProduk;
+    private double harga;
+    private int stok;
+    private String kategori;
 
     // Constructor
     public Product(int idProduk, String namaProduk, double harga, int stok, String kategori) {

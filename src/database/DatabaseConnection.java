@@ -8,7 +8,7 @@ import javax.swing.JOptionPane;
 
 public class DatabaseConnection {
     // Sesuaikan konfigurasi ini dengan database lokal Anda
-    private static final String HOST = "jdbc:mysql://localhost:3306/"; // alamat server MySQL (tanpa nama database)
+    private static final String HOST = "jdbc:mysql://localhost:3307/"; // alamat server MySQL (tanpa nama database)
     private static final String NAMA_DATABASE = "kasir_db";            // nama database yang akan dipakai
     private static final String URL = HOST + NAMA_DATABASE;            // alamat lengkap ke database kasir_db
     private static final String USER = "root";                         // Username default XAMPP
