@@ -1,0 +1,18 @@
+# Hasil compile Java
+build/
+dist/
+*.class
+
+# Library eksternal (besar, bisa di-download ulang)
+lib/
+
+# File NetBeans lokal
+nbproject/private/
+
+# File sementara / log
+*.log
+*.tmp
+
+# File OS
+Thumbs.db
+.DS_Store
