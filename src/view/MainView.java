@@ -252,13 +252,13 @@ public class MainView extends JFrame {
 
     private void tambahProduk() {
         try {
-            String nama = txtNamaProduk.getText();
+            String nama = txtNamaProduk.getText().trim(); // trim: buang spasi depan-belakang
             double harga = Double.parseDouble(txtHarga.getText());
             int stok = Integer.parseInt(txtStok.getText());
             String kategori = cbKategori.getSelectedItem().toString();
 
-            if (nama.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Nama produk tidak boleh kosong!");
+            // Validasi input sebelum dikirim ke controller
+            if (!produkValid(nama, harga, stok)) {
                 return;
             }
 
@@ -284,10 +284,15 @@ public class MainView extends JFrame {
             }
 
             int id = Integer.parseInt(txtIdProduk.getText());
-            String nama = txtNamaProduk.getText();
+            String nama = txtNamaProduk.getText().trim();
             double harga = Double.parseDouble(txtHarga.getText());
             int stok = Integer.parseInt(txtStok.getText());
             String kategori = cbKategori.getSelectedItem().toString();
+
+            // Validasi input yang sama seperti saat menambah
+            if (!produkValid(nama, harga, stok)) {
+                return;
+            }
 
             Product p = productController.buatProduk(id, nama, harga, stok, kategori);
 
@@ -359,6 +364,9 @@ public class MainView extends JFrame {
             if (produk == null) return;
 
             int jumlah = Integer.parseInt(txtJumlahBeli.getText());
+            if (!jumlahValid(jumlah)) {
+                return;
+            }
 
             // Perhitungan diserahkan ke Controller (logika bisnis)
             double total = transactionController.hitungTotal(produk, jumlah);
@@ -369,16 +377,21 @@ public class MainView extends JFrame {
     }
 
     private void prosesBayar() {
-        if (txtTotalHarga.getText().isEmpty()) {
-            hitungTotal(); // hitung otomatis jika belum
-        }
-
         try {
             Product produk = produkTerpilih();
-            if (produk == null) return;
+            if (produk == null) {
+                JOptionPane.showMessageDialog(this, "Belum ada produk yang dipilih!");
+                return;
+            }
 
             int jumlah = Integer.parseInt(txtJumlahBeli.getText());
-            double total = Double.parseDouble(txtTotalHarga.getText());
+            if (!jumlahValid(jumlah)) {
+                return;
+            }
+
+            // Hitung total dari controller (bukan dari teks di layar) agar selalu akurat
+            double total = transactionController.hitungTotal(produk, jumlah);
+            txtTotalHarga.setText(String.valueOf(total));
 
             if (transactionController.prosesTransaksi(produk, jumlah, total)) {
                 JOptionPane.showMessageDialog(this, "Transaksi Sukses!");
@@ -431,5 +444,34 @@ public class MainView extends JFrame {
                     t.getIdTransaksi(), t.getNamaProduk(), t.getJumlahBeli(), t.getTotalHarga(), t.getTanggal()
             });
         }
+    }
+
+    // ================== METHOD BANTU VALIDASI ==================
+
+    // Memeriksa input produk. Mengembalikan true jika valid,
+    // atau menampilkan pesan + mengembalikan false jika ada yang salah.
+    private boolean produkValid(String nama, double harga, int stok) {
+        if (nama.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Nama produk tidak boleh kosong!");
+            return false;
+        }
+        if (harga <= 0) {
+            JOptionPane.showMessageDialog(this, "Harga harus lebih dari 0!");
+            return false;
+        }
+        if (stok < 0) {
+            JOptionPane.showMessageDialog(this, "Stok tidak boleh negatif!");
+            return false;
+        }
+        return true;
+    }
+
+    // Memeriksa jumlah beli pada transaksi. Minimal 1.
+    private boolean jumlahValid(int jumlah) {
+        if (jumlah <= 0) {
+            JOptionPane.showMessageDialog(this, "Jumlah beli minimal 1!");
+            return false;
+        }
+        return true;
     }
 }

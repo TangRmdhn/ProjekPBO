@@ -36,6 +36,10 @@ public class ProductController {
 
     // Menambah produk baru
     public boolean tambahProduk(Product product) {
+        // Jaring pengaman: jangan simpan kalau data produk tidak masuk akal
+        if (!produkMasukAkal(product)) {
+            return false;
+        }
         return productDAO.simpan(product);
     }
 
@@ -46,7 +50,22 @@ public class ProductController {
 
     // Mengubah produk
     public boolean ubahProduk(Product product) {
+        if (!produkMasukAkal(product)) {
+            return false;
+        }
         return productDAO.ubah(product);
+    }
+
+    // Jaring pengaman logika bisnis: harga harus > 0, stok tidak boleh negatif,
+    // nama tidak boleh kosong. Dipakai sebelum menyimpan/mengubah ke database.
+    private boolean produkMasukAkal(Product product) {
+        if (product.getNamaProduk() == null || product.getNamaProduk().trim().isEmpty()) {
+            return false;
+        }
+        if (product.getHarga() <= 0) {
+            return false;
+        }
+        return product.getStok() >= 0;
     }
 
     // Menghapus produk

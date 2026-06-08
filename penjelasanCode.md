@@ -13,6 +13,7 @@ Dokumen ini menjelaskan isi kode, penerapan konsep **OOP** (4 pilar) dan prinsip
 6. [Konsep Java Lain yang Dipakai](#6-konsep-java-lain-yang-dipakai)
 7. [Alur Kerja Aplikasi](#7-alur-kerja-aplikasi)
 8. [Diagram UML](#8-diagram-uml)
+9. [Validasi Input & Penanganan Edge Case](#9-validasi-input--penanganan-edge-case)
 
 ---
 
@@ -222,6 +223,7 @@ public ProductController(ProductRepository repo) { productDAO = repo; } // bisa 
 | **Database Transaction** | TransactionDAO | `commit()`/`rollback()` agar data konsisten |
 | **Multithreading** | MainView | Jam digital berjalan di Thread terpisah |
 | **Event Handling** | MainView | `ActionListener`, `MouseListener` untuk klik tombol/tabel |
+| **Validasi Input** | MainView & Controller | Cek 2 lapis agar data tidak masuk akal ditolak (lihat bagian 9) |
 
 ---
 
@@ -448,3 +450,62 @@ classDiagram
 - `MainView` hanya berhubungan dengan Controller, tidak langsung ke DAO/Database → **lapisan MVC terjaga**.
 
 > **Catatan:** Diagram di atas memakai Mermaid agar bisa langsung ditampilkan di GitHub/VS Code. Untuk laporan resmi, diagram yang sama bisa digambar ulang di tools seperti **draw.io**, **StarUML**, atau **Lucidchart**.
+
+---
+
+## 9. Validasi Input & Penanganan Edge Case
+
+Aplikasi memeriksa input pengguna agar data yang aneh (negatif, nol, kosong) tidak masuk ke database. Pemeriksaan dilakukan **dua lapis**: di View (memberi pesan ke pengguna) dan di Controller (jaring pengaman logika bisnis).
+
+### Edge case yang ditangani
+
+| Kasus | Bahaya kalau dibiarkan | Penanganan |
+|-------|------------------------|------------|
+| **Jumlah beli negatif** (mis. -1) | SQL `stok - (-1)` membuat stok malah **bertambah** | Ditolak di View + Controller (`jumlah <= 0` → batal) |
+| **Jumlah beli 0** | Transaksi tercatat dengan total Rp 0 | Minimal jumlah 1 |
+| **Harga ≤ 0** | Produk berharga 0 / negatif tersimpan | Harus lebih dari 0 |
+| **Stok negatif** | Stok minus tidak masuk akal | Stok minimal 0 |
+| **Nama produk kosong / hanya spasi** | Produk tanpa nama tersimpan | `trim()` lalu cek kosong |
+
+### Lapis 1 — Validasi di View (`MainView`)
+Memberi pesan jelas sebelum data dikirim. Contoh:
+
+```java
+private boolean produkValid(String nama, double harga, int stok) {
+    if (nama.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Nama produk tidak boleh kosong!");
+        return false;
+    }
+    if (harga <= 0) {
+        JOptionPane.showMessageDialog(this, "Harga harus lebih dari 0!");
+        return false;
+    }
+    if (stok < 0) {
+        JOptionPane.showMessageDialog(this, "Stok tidak boleh negatif!");
+        return false;
+    }
+    return true;
+}
+```
+
+### Lapis 2 — Jaring pengaman di Controller
+Walaupun View lupa memeriksa, Controller tetap menolak data yang tidak masuk akal sebelum menyentuh database:
+
+```java
+// ProductController
+private boolean produkMasukAkal(Product product) {
+    if (product.getNamaProduk() == null || product.getNamaProduk().trim().isEmpty()) return false;
+    if (product.getHarga() <= 0) return false;
+    return product.getStok() >= 0;
+}
+
+// TransactionController
+public boolean prosesTransaksi(Product produk, int jumlahBeli, double totalHarga) {
+    if (jumlahBeli <= 0) return false; // cegah stok bertambah karena angka negatif
+    ...
+}
+```
+
+### Kenapa dua lapis?
+- **View** ramah pengguna: kasih tahu *apa* yang salah lewat pesan.
+- **Controller** menjaga aturan bisnis: kalau nanti ada tombol/menu baru yang lupa validasi, data tetap aman. Ini menerapkan prinsip *"jangan percaya input"* dan menjaga **Single Responsibility** (View urus pesan, Controller urus aturan).

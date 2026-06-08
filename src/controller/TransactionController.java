@@ -28,11 +28,20 @@ public class TransactionController {
     // Logika bisnis: menghitung total harga = harga produk x jumlah beli.
     // Diletakkan di Controller, bukan di View, supaya View hanya mengurus tampilan.
     public double hitungTotal(Product produk, int jumlahBeli) {
+        // Jaring pengaman: jumlah tidak masuk akal -> total 0 (jangan hitung negatif)
+        if (jumlahBeli <= 0) {
+            return 0;
+        }
         return produk.getHarga() * jumlahBeli;
     }
 
     // Memproses pembayaran / transaksi kasir
     public boolean prosesTransaksi(Product produk, int jumlahBeli, double totalHarga) {
+        // Jaring pengaman: tolak transaksi kalau jumlah beli <= 0,
+        // supaya stok tidak malah bertambah karena angka negatif.
+        if (jumlahBeli <= 0) {
+            return false;
+        }
         return transactionDAO.prosesTransaksi(
                 produk.getIdProduk(),
                 produk.getNamaProduk(),
