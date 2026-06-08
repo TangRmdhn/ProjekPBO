@@ -12,6 +12,7 @@ Dokumen ini menjelaskan isi kode, penerapan konsep **OOP** (4 pilar) dan prinsip
 5. [Penerapan Prinsip SOLID](#5-penerapan-prinsip-solid)
 6. [Konsep Java Lain yang Dipakai](#6-konsep-java-lain-yang-dipakai)
 7. [Alur Kerja Aplikasi](#7-alur-kerja-aplikasi)
+8. [Diagram UML](#8-diagram-uml)
 
 ---
 
@@ -253,3 +254,197 @@ public ProductController(ProductRepository repo) { productDAO = repo; } // bisa 
 ---
 
 > **Ringkasan:** Aplikasi ini menerapkan 4 pilar OOP (Abstraction, Encapsulation, Inheritance, Polymorphism) dan 5 prinsip SOLID secara nyata melalui arsitektur berlapis MVC + DAO, dengan kode yang sengaja dibuat sederhana dan berkomentar Bahasa Indonesia agar mudah dipelajari pemula.
+
+---
+
+## 8. Diagram UML
+
+Dibuat sebelum coding sebagai rancangan. Diagram di bawah memakai **Mermaid** (otomatis ter-render sebagai gambar saat dibuka di GitHub).
+
+### a. Use Case Diagram
+Menjelaskan apa saja yang bisa dilakukan **Kasir** (pengguna) terhadap sistem.
+
+```mermaid
+%% Use Case Diagram - Sistem Kasir
+flowchart LR
+    kasir(["👤 Kasir"])
+
+    subgraph SISTEM["Sistem Kasir (POS)"]
+        uc1(["Tambah Produk"])
+        uc2(["Edit Produk"])
+        uc3(["Hapus Produk"])
+        uc4(["Cari Produk"])
+        uc5(["Lihat Daftar Produk"])
+        uc6(["Hitung Total Belanja"])
+        uc7(["Proses Pembayaran"])
+        uc8(["Lihat Riwayat Transaksi"])
+    end
+
+    db[("🗄️ Database MySQL")]
+
+    kasir --- uc1
+    kasir --- uc2
+    kasir --- uc3
+    kasir --- uc4
+    kasir --- uc5
+    kasir --- uc6
+    kasir --- uc7
+    kasir --- uc8
+
+    uc1 --> db
+    uc2 --> db
+    uc3 --> db
+    uc4 --> db
+    uc5 --> db
+    uc7 --> db
+    uc8 --> db
+```
+
+**Keterangan:**
+- **Aktor:** Kasir (satu-satunya pengguna sistem).
+- **Use case Produk:** Tambah, Edit, Hapus, Cari, Lihat daftar (CRUD).
+- **Use case Transaksi:** Hitung Total, Proses Pembayaran (mengurangi stok + mencatat riwayat).
+- **Use case Riwayat:** Lihat semua riwayat penjualan.
+- Sebagian besar use case berinteraksi dengan **Database MySQL** untuk menyimpan/mengambil data. *Hitung Total* tidak ke database karena hanya perhitungan di memori.
+
+### b. Class Diagram
+Menjelaskan hubungan antar class beserta atribut dan method utamanya.
+
+```mermaid
+classDiagram
+    direction TB
+
+    class Product {
+        <<abstract>>
+        -int idProduk
+        -String namaProduk
+        -double harga
+        -int stok
+        -String kategori
+        +getNamaProduk() String
+        +getHarga() double
+        +getProductInfo()* String
+    }
+
+    class FoodProduct {
+        +FoodProduct(id, nama, harga, stok)
+        +getProductInfo() String
+    }
+
+    class DrinkProduct {
+        +DrinkProduct(id, nama, harga, stok)
+        +getProductInfo() String
+    }
+
+    class ProductFactory {
+        +buatProduk(id, nama, harga, stok, kategori)$ Product
+    }
+
+    class Transaction {
+        -int idTransaksi
+        -String namaProduk
+        -int jumlahBeli
+        -double totalHarga
+        -Timestamp tanggal
+        +getTotalHarga() double
+    }
+
+    class ProductRepository {
+        <<interface>>
+        +simpan(Product) boolean
+        +ambilSemua() ArrayList~Product~
+        +ubah(Product) boolean
+        +hapus(int) boolean
+        +cari(String) ArrayList~Product~
+    }
+
+    class TransactionRepository {
+        <<interface>>
+        +prosesTransaksi(...) boolean
+        +ambilSemua() ArrayList~Transaction~
+    }
+
+    class ProductDAO {
+        -Connection conn
+        +simpan(Product) boolean
+        +ambilSemua() ArrayList~Product~
+        +ubah(Product) boolean
+        +hapus(int) boolean
+        +cari(String) ArrayList~Product~
+    }
+
+    class TransactionDAO {
+        -Connection conn
+        +prosesTransaksi(...) boolean
+        +ambilSemua() ArrayList~Transaction~
+    }
+
+    class ProductController {
+        -ProductRepository productDAO
+        +tambahProduk(Product) boolean
+        +ambilSemuaProduk() ArrayList~Product~
+        +ubahProduk(Product) boolean
+        +hapusProduk(int) boolean
+        +cariProduk(String) ArrayList~Product~
+    }
+
+    class TransactionController {
+        -TransactionRepository transactionDAO
+        +hitungTotal(Product, int) double
+        +prosesTransaksi(...) boolean
+        +ambilSemuaTransaksi() ArrayList~Transaction~
+    }
+
+    class MainView {
+        -ProductController productController
+        -TransactionController transactionController
+    }
+
+    class DatabaseConnection {
+        +getConnection()$ Connection
+    }
+
+    class Main {
+        +main(String[])$ void
+    }
+
+    Product <|-- FoodProduct : extends
+    Product <|-- DrinkProduct : extends
+    ProductFactory ..> Product : membuat
+    ProductFactory ..> FoodProduct : membuat
+    ProductFactory ..> DrinkProduct : membuat
+
+    ProductRepository <|.. ProductDAO : implements
+    TransactionRepository <|.. TransactionDAO : implements
+
+    ProductController o--> ProductRepository : pakai
+    TransactionController o--> TransactionRepository : pakai
+
+    ProductDAO ..> ProductFactory : pakai
+    ProductDAO ..> DatabaseConnection : pakai
+    TransactionDAO ..> DatabaseConnection : pakai
+
+    MainView o--> ProductController : pakai
+    MainView o--> TransactionController : pakai
+    Main ..> MainView : menjalankan
+
+    ProductController ..> Product : memakai
+    TransactionController ..> Transaction : memakai
+```
+
+**Cara membaca simbol panah:**
+
+| Simbol | Arti | Contoh di diagram |
+|--------|------|-------------------|
+| `<|--` | **Inheritance** (extends) | `FoodProduct` mewarisi `Product` |
+| `<|..` | **Realization** (implements interface) | `ProductDAO` mengimplementasi `ProductRepository` |
+| `o-->` | **Aggregation** (punya/pakai objek lain) | `ProductController` punya `ProductRepository` |
+| `..>`  | **Dependency** (sekadar memakai) | `ProductDAO` memakai `ProductFactory` |
+
+**Hubungan utama yang terlihat:**
+- `FoodProduct` & `DrinkProduct` adalah turunan `Product` → **Inheritance**.
+- `ProductDAO` & `TransactionDAO` mematuhi kontrak interface → **Abstraction + ISP**.
+- `Controller` bergantung pada **interface** repository, bukan DAO konkret → **Dependency Inversion**.
+- `MainView` hanya berhubungan dengan Controller, tidak langsung ke DAO/Database → **lapisan MVC terjaga**.
+
+> **Catatan:** Diagram di atas memakai Mermaid agar bisa langsung ditampilkan di GitHub/VS Code. Untuk laporan resmi, diagram yang sama bisa digambar ulang di tools seperti **draw.io**, **StarUML**, atau **Lucidchart**.
