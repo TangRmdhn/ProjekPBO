@@ -1,105 +1,194 @@
 # Dokumentasi Project Akhir PBO - Sistem Kasir (POS)
 
-Project ini adalah aplikasi desktop sederhana berbasis Java Swing yang menerapkan konsep PBO (Pemrograman Berorientasi Objek) dan terhubung dengan database MySQL.
+Aplikasi desktop sederhana berbasis **Java Swing** yang menerapkan konsep PBO (Pemrograman Berorientasi Objek) dengan pola **MVC** dan terhubung ke database **MySQL**.
 
-## Struktur Folder Project
+> **Catatan penting:** Database dan tabel dibuat **OTOMATIS** oleh aplikasi saat pertama dijalankan. Anda **tidak perlu** membuat database `kasir_db` atau menjalankan `database.sql` secara manual. Cukup pastikan server MySQL menyala.
+
+---
+
+## Daftar Isi
+1. [Yang Harus Diinstall Dulu](#1-yang-harus-diinstall-dulu)
+2. [Cara Clone Repo dari GitHub](#2-cara-clone-repo-dari-github)
+3. [Setup Koneksi Database](#3-setup-koneksi-database)
+4. [Pastikan MySQL Sudah Menyala](#4-pastikan-mysql-sudah-menyala)
+5. [Cara Membuka Project di NetBeans](#5-cara-membuka-project-di-netbeans)
+6. [Menjalankan Aplikasi](#6-menjalankan-aplikasi)
+7. [Struktur Folder & Penjelasan MVC](#struktur-folder--penjelasan-mvc)
+8. [Konsep OOP yang Digunakan](#konsep-oop-yang-digunakan)
+9. [Troubleshooting (Kalau Error)](#troubleshooting-kalau-error)
+
+---
+
+## 1. Yang Harus Diinstall Dulu
+
+Pastikan laptop sudah terpasang:
+
+| Aplikasi | Fungsi | Catatan |
+|----------|--------|---------|
+| **JDK 8 atau lebih baru** | Menjalankan kode Java | Wajib |
+| **NetBeans IDE** | Tempat menulis & menjalankan project | Wajib |
+| **XAMPP** (atau MySQL Server) | Menyediakan database MySQL | Wajib |
+| **Git** | Untuk clone repo dari GitHub | Opsional (bisa download ZIP) |
+
+> Driver MySQL (`mysql-connector-j`) **sudah disertakan** di dalam folder `lib/`, jadi tidak perlu download lagi.
+
+---
+
+## 2. Cara Clone Repo dari GitHub
+
+Buka terminal / Git Bash / CMD, lalu jalankan:
+
+```bash
+git clone https://github.com/TangRmdhn/ProjekPBO.git
+cd ProjekPBO
+```
+
+> **Tidak punya Git?** Buka halaman repo di browser → tombol hijau **Code** → **Download ZIP** → lalu ekstrak.
+
+---
+
+## 3. Setup Koneksi Database
+
+Buka file:
+
+```
+src/database/DatabaseConnection.java
+```
+
+Bagian atas file berisi konfigurasi. **Nilai default sudah cocok untuk XAMPP standar**, jadi biasanya tidak perlu diubah:
+
+```java
+private static final String HOST = "jdbc:mysql://localhost:3306/"; // port default MySQL
+private static final String NAMA_DATABASE = "kasir_db";            // nama database (dibuat otomatis)
+private static final String USER = "root";                         // username default XAMPP
+private static final String PASSWORD = "";                         // password default XAMPP (kosong)
+```
+
+Sesuaikan **hanya jika** setup MySQL Anda berbeda:
+
+- **Port bukan 3306?** Ganti angka `3306` (misal XAMPP lama memakai `3307`).
+- **Punya password root?** Isi di antara tanda kutip `PASSWORD`, contoh: `"admin123"`.
+- **Username bukan root?** Ganti nilai `USER`.
+
+---
+
+## 4. Pastikan MySQL Sudah Menyala
+
+Aplikasi tidak akan jalan kalau server MySQL mati.
+
+**Jika pakai XAMPP:**
+1. Buka **XAMPP Control Panel**.
+2. Klik tombol **Start** pada baris **MySQL**.
+3. Tunggu sampai tulisannya berubah hijau (Running).
+
+> Tidak perlu buka phpMyAdmin atau membuat database manual — aplikasi yang akan membuat database `kasir_db` beserta tabel `products` dan `transactions` secara otomatis, lengkap dengan beberapa data contoh.
+
+---
+
+## 5. Cara Membuka Project di NetBeans
+
+Repo ini sudah berbentuk project NetBeans (ada folder `nbproject` dan file `build.xml`), jadi langsung bisa dibuka:
+
+1. Buka **NetBeans IDE**.
+2. Menu **File → Open Project**.
+3. Arahkan ke folder hasil clone tadi (`ProjekPBO`), lalu klik **Open Project**.
+4. Project akan muncul di panel **Projects** di kiri.
+
+### Pastikan Library JDBC terpasang
+Driver sudah ada di folder `lib/`. Cek di panel Projects → buka **Libraries**. Harusnya ada `mysql-connector-j-...jar`.
+
+Kalau **tidak ada** (atau muncul tanda error merah):
+1. Klik kanan folder **Libraries** → **Add JAR/Folder**.
+2. Arahkan ke `lib/mysql-connector-j-9.7.0/` dan pilih file `.jar`-nya.
+3. Klik **Open**.
+
+---
+
+## 6. Menjalankan Aplikasi
+
+1. Pastikan **MySQL sudah menyala** (langkah 4).
+2. Di panel Projects, buka `src` → `main` → `Main.java`.
+3. Klik kanan `Main.java` → **Run File** (atau tekan **Shift + F6**).
+4. Jendela aplikasi kasir akan terbuka.
+
+Saat pertama jalan, di output NetBeans akan muncul:
+```
+Database dan tabel siap digunakan!
+Koneksi Database Berhasil!
+```
+
+---
+
+## Struktur Folder & Penjelasan MVC
+
+Project memakai pola **MVC berlapis** supaya tiap bagian punya tugas jelas:
 
 ```text
 src/
  ├── main/
- │    └── Main.java                 # Entry point aplikasi
- ├── database/
- │    └── DatabaseConnection.java   # Konfigurasi koneksi JDBC ke MySQL
- ├── model/
- │    ├── Product.java              # Superclass (Produk)
- │    ├── FoodProduct.java          # Subclass (Makanan)
- │    ├── DrinkProduct.java         # Subclass (Minuman)
- │    └── Transaction.java          # Model untuk data transaksi
+ │    └── Main.java                 # Titik awal aplikasi (menjalankan View)
+ ├── view/
+ │    └── MainView.java             # TAMPILAN (GUI Swing) — hanya urusan tampilan
  ├── controller/
- │    ├── ProductController.java    # Logika CRUD Produk (Data Access)
- │    └── TransactionController.java# Logika transaksi dan riwayat
- └── view/
-      └── MainView.java             # Antarmuka grafis (GUI Java Swing)
+ │    ├── ProductController.java    # JEMBATAN View <-> DAO + validasi sederhana
+ │    └── TransactionController.java# Jembatan transaksi + hitung total (logika bisnis)
+ ├── dao/
+ │    ├── ProductDAO.java           # SEMUA perintah SQL produk berkumpul di sini
+ │    └── TransactionDAO.java       # Semua perintah SQL transaksi
+ ├── model/
+ │    ├── Product.java              # Superclass produk (abstract)
+ │    ├── FoodProduct.java          # Subclass Makanan
+ │    ├── DrinkProduct.java         # Subclass Minuman
+ │    ├── ProductFactory.java       # "Pabrik": memilih kelas berdasar kategori
+ │    └── Transaction.java          # Model data transaksi
+ └── database/
+      └── DatabaseConnection.java   # Koneksi JDBC + auto-buat database & tabel
 ```
 
-## Penjelasan Konsep OOP yang Digunakan
+**Alur kerja (contoh tambah produk):**
+```
+MainView (klik tombol Tambah)
+   -> ProductController (validasi + buat objek lewat ProductFactory)
+      -> ProductDAO (jalankan INSERT ke MySQL)
+```
 
-1. **Class dan Object**:
-   - Class bertindak sebagai blueprint. Contoh: `Product.java`.
-   - Object adalah instansiasi class. Contoh pembuatan object: `Product p = new Product(...)`.
+Tiap lapisan hanya bicara dengan lapisan tetangganya:
+- **View** tidak menulis SQL dan tidak menghitung apa pun — hanya menampilkan & menerima input.
+- **Controller** tidak tahu soal SQL — hanya mengatur logika dan meneruskan ke DAO.
+- **DAO** satu-satunya yang menyentuh database.
+- **Model** hanya menyimpan data (apa itu sebuah Produk/Transaksi).
 
-2. **Encapsulation**:
-   - Di class `Product` dan `Transaction`, semua variabel dideklarasikan sebagai `private` atau `protected`.
-   - Akses data menggunakan method Getter (`getNamaProduk()`) dan Setter (`setNamaProduk()`).
+---
 
-3. **Inheritance (Pewarisan)**:
-   - `FoodProduct` dan `DrinkProduct` menggunakan keyword `extends Product`.
-   - Class anak mewarisi atribut dan method dari class induk (`Product`), sehingga tidak perlu menulis ulang kode.
+## Konsep OOP yang Digunakan
 
-4. **Polymorphism**:
-   - Terjadi Overriding method `getProductInfo()` di class `FoodProduct` dan `DrinkProduct`.
-   - Di dalam Controller, kita menyimpan objek `FoodProduct` dan `DrinkProduct` di dalam `ArrayList<Product>`, ini merupakan konsep *Upcasting*.
+1. **Class & Object** — `Product`, `Transaction`, dll. adalah blueprint; `new FoodProduct(...)` adalah object.
+2. **Encapsulation** — field di model bersifat `private`/`protected`, diakses lewat getter/setter.
+3. **Inheritance** — `FoodProduct` dan `DrinkProduct` memakai `extends Product`.
+4. **Polymorphism** — method `getProductInfo()` di-override; banyak objek anak disimpan dalam satu `ArrayList<Product>` (upcasting).
+5. **Abstraction** — `Product` adalah `abstract class` dengan method abstrak `getProductInfo()`.
+6. **Constructor** — memberi nilai awal saat object dibuat.
+7. **Exception Handling** — `try-catch` untuk `SQLException` (DAO) dan `NumberFormatException` (View).
+8. **Collection** — `ArrayList<Product>` & `ArrayList<Transaction>` untuk menampung data sebelum ditampilkan ke `JTable`.
+9. **Multithreading** — jam pada header berjalan di Thread terpisah (`startClockThread`).
+10. **Database Transaction** — `setAutoCommit(false)` + `commit()`/`rollback()` di `TransactionDAO` agar data tidak inkonsisten.
 
-5. **Constructor**:
-   - Digunakan untuk memberi nilai awal ketika objek diciptakan (`new Product(...)`).
+---
 
-6. **Exception Handling**:
-   - Blok `try-catch` digunakan secara intensif di Controller untuk menangkap `SQLException` saat koneksi gagal.
-   - Digunakan juga di View saat parsing input angka (`NumberFormatException`).
+## Troubleshooting (Kalau Error)
 
-7. **Collection (ArrayList)**:
-   - `ArrayList<Product>` dan `ArrayList<Transaction>` digunakan untuk menyimpan daftar produk dan riwayat dari database sementara sebelum ditampilkan ke JTable.
+| Pesan / Gejala | Penyebab | Solusi |
+|----------------|----------|--------|
+| "Gagal terhubung ke database!" | MySQL belum menyala | Start MySQL di XAMPP (langkah 4) |
+| `Communications link failure` | Port salah | Cek port di `DatabaseConnection.java` (3306 vs 3307) |
+| `Access denied for user 'root'` | Password/username salah | Sesuaikan `USER` & `PASSWORD` di `DatabaseConnection.java` |
+| `Driver JDBC tidak ditemukan` | Library belum dipasang | Tambahkan `.jar` dari folder `lib/` ke Libraries NetBeans |
+| Data produk dobel | Wajar — data contoh hanya diisi saat tabel masih kosong | Abaikan, atau hapus lewat aplikasi |
 
-## Penjelasan Setiap Class
+---
 
-- **`Main.java`**: Menjalankan aplikasi dengan memanggil dan menampilkan form GUI.
-- **`DatabaseConnection.java`**: Menyimpan URL, User, dan Password database, dan menggunakan Driver Manager JDBC untuk menghubungkan Java dengan MySQL Server.
-- **`Product.java`**: Blueprint dasar dari sebuah produk. Menyimpan ID, Nama, Harga, Stok, dan Kategori.
-- **`FoodProduct` & `DrinkProduct`**: Bentuk turunan produk. Menambahkan logika spesifik (melalui constructor super dan overriding).
-- **`Transaction.java`**: Mempresentasikan satu baris data history transaksi.
-- **`ProductController.java`**: Melakukan *Prepared Statements* untuk Query SQL: INSERT (Tambah), SELECT (Tampil/Cari), UPDATE (Edit), dan DELETE (Hapus) ke tabel `products`.
-- **`TransactionController.java`**: Mengurus alur transaksi. Di dalamnya terdapat konsep *Database Transaction* sederhana (`setAutoCommit(false)`, `commit()`, `rollback()`) agar jika stok gagal diupdate, riwayat tidak akan tersimpan secara otomatis (Mencegah data inkonsisten).
-- **`MainView.java`**: Menggunakan komponen GUI: `JFrame` sebagai jendela, `JTabbedPane` untuk membuat 3 tab (Kelola, Kasir, Riwayat), `JPanel` dibantu `BorderLayout` dan `GridLayout` untuk merapikan `JLabel`, `JTextField`, `JButton`, dan `JTable`. Menangkap event `ActionListener` ketika tombol diklik.
-
-## Penjelasan CRUD
-
-- **Create (Tambah)**: Input data dari GUI -> Validasi (Tipe Angka?) -> Jadikan Object `Product` -> Kirim ke `ProductController.addProduct()` -> Simpan ke DB dengan `INSERT`.
-- **Read (Tampil & Cari)**: Memanggil `getAllProducts()` atau `searchProduct(keyword)`. Data diambil dari `ResultSet` MySQL -> Disimpan ke `ArrayList` -> Dilakukan perulangan (`for`) untuk ditambahkan per baris ke `DefaultTableModel` JTable.
-- **Update (Edit)**: User mengklik JTable -> Data di-load ke TextField -> User ganti -> Tekan Edit -> Kirim object beserta `idProduk` ke `updateProduct()` -> Eksekusi perintah `UPDATE`.
-- **Delete (Hapus)**: Ambil `idProduk` dari TextField -> Peringatkan User via `JOptionPane` -> Jika Yes, jalankan perintah `DELETE` di database.
-
-## Cara Menjalankan Project (Untuk Presentasi / NetBeans)
-
-1. Pastikan Anda sudah menginstall XAMPP dan menyalakan **MySQL**.
-2. Buka aplikasi manajemen database Anda (phpMyAdmin atau HeidiSQL).
-3. Buat database baru bernama `kasir_db` jika belum ada.
-4. Salin isi dari file `database.sql` dan eksekusi (Run) pada database tersebut untuk membuat tabel beserta contoh datanya.
-5. Buka **NetBeans IDE**.
-6. Buat **New Project** -> **Java Application** -> Uncheck *Create Main Class*.
-7. Copy/pindahkan folder `src` (yang ada `controller`, `database`, `main`, `model`, `view`) ke dalam folder source packages project Anda di NetBeans.
-8. **Tambahkan Library JDBC**: 
-   - Di bagian Projects tree NetBeans, klik kanan pada folder **Libraries** -> **Add JAR/Folder**.
-   - Cari file `mysql-connector-java-xxx.jar` Anda, lalu pilih OK. (Jika tidak punya, Anda harus download terlebih dahulu).
-9. Klik kanan pada class `Main.java` lalu pilih **Run File** (atau tekan Shift+F6).
-10. Aplikasi Java Swing Anda akan terbuka.
-
-## Contoh Alur Tampilan GUI
-
-Aplikasi menggunakan tab (`JTabbedPane`).
-- **Tab 1: Kelola Produk**
-  - Bagian Atas: Form isian (ID otomatis, Nama, Harga, Stok, Kategori Makanan/Minuman) dan tombol Tambah, Edit, Hapus.
-  - Bagian Tengah: Tabel (`JTable`) berisi daftar produk. Klik tabel untuk memasukkan data ke form secara otomatis.
-  - Bagian Bawah: Fitur Cari berdasarkan Nama dan tombol Refresh.
-- **Tab 2: Transaksi Kasir**
-  - Dropdown (`JComboBox`) berisi daftar nama produk yang ada.
-  - Textfield "Jumlah Beli".
-  - Textfield "Total Harga" dan tombol "Hitung Total".
-  - Tombol "Bayar". Jika diklik akan mengurangi stok produk di DB dan menyimpan riwayat transaksi.
-- **Tab 3: Riwayat Transaksi**
-  - Hanya menampilkan tabel (`JTable`) berisi riwayat penjualan beserta waktu transaksinya.
-
-> **Tips Presentasi Mahasiswa:**
-> 1. Jelaskan `DatabaseConnection.java` pertama kali untuk menunjukkan koneksi sukses.
-> 2. Buka Class `Product` lalu `FoodProduct` untuk menjelaskan Inheritance.
-> 3. Tunjukkan GUI, klik data tabel (praktekkan *Event Handling*), lakukan update stok, lalu peragakan fitur transaksi.
-> 4. Tunjukkan tabel Database berubah setelah tombol Bayar di-klik.
+> **Tips Presentasi:**
+> 1. Tunjukkan database otomatis terbuat saat aplikasi pertama dijalankan.
+> 2. Buka `Product` lalu `FoodProduct` untuk menjelaskan Inheritance & Abstraction.
+> 3. Tunjukkan alur View → Controller → DAO untuk menjelaskan pemisahan tugas (MVC).
+> 4. Praktekkan transaksi, lalu tunjukkan stok berkurang & riwayat bertambah di database.
