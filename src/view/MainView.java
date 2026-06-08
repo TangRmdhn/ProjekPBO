@@ -7,20 +7,27 @@ import model.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 
+// View = bagian tampilan (GUI Swing).
+// Tugasnya HANYA: menampilkan data dan menerima klik/ketikan pengguna,
+// lalu menyerahkan pekerjaan ke Controller. View tidak menulis SQL
+// dan tidak menghitung logika bisnis sendiri.
 public class MainView extends JFrame {
 
     private ProductController productController;
     private TransactionController transactionController;
 
+    // Menyimpan daftar produk yang sedang tampil di combobox transaksi.
+    // Dipakai agar saat memilih produk kita ambil objek Product langsung (lewat nomor urut),
+    // bukan dengan memotong-motong teks combobox.
+    private ArrayList<Product> daftarProdukCombo = new ArrayList<>();
+
     // Komponen GUI
     private JTabbedPane tabbedPane;
-    
+
     // -- TAB PRODUK --
     private JPanel panelProduk;
     private DefaultTableModel tableModelProduk;
@@ -31,8 +38,6 @@ public class MainView extends JFrame {
 
     // -- TAB TRANSAKSI --
     private JPanel panelTransaksi;
-    private DefaultTableModel tableModelTransaksi;
-    private JTable tableTransaksi;
     private JComboBox<String> cbPilihProduk;
     private JTextField txtJumlahBeli, txtTotalHarga;
     private JButton btnHitung, btnBayar;
@@ -86,7 +91,7 @@ public class MainView extends JFrame {
         refreshTableProduk();
         refreshComboProduk();
         refreshTableRiwayat();
-        
+
         // Listener saat tab berubah untuk refresh data
         tabbedPane.addChangeListener(e -> {
             if (tabbedPane.getSelectedIndex() == 1) { // Tab Transaksi
@@ -162,7 +167,7 @@ public class MainView extends JFrame {
         btnCari.addActionListener(e -> cariProduk());
         btnRefresh.addActionListener(e -> refreshTableProduk());
 
-        // Event Klik Tabel
+        // Event Klik Tabel: isi form dari baris yang diklik
         tableProduk.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -219,15 +224,15 @@ public class MainView extends JFrame {
         tableModelRiwayat = new DefaultTableModel(new String[]{"ID Transaksi", "Nama Produk", "Jumlah", "Total Harga", "Waktu"}, 0);
         tableRiwayat = new JTable(tableModelRiwayat);
         JScrollPane scrollPane = new JScrollPane(tableRiwayat);
-        
+
         panelRiwayat.add(new JLabel("Daftar Riwayat Transaksi Penjualan"), BorderLayout.NORTH);
         panelRiwayat.add(scrollPane, BorderLayout.CENTER);
     }
 
     // ================== LOGIKA CRUD PRODUK ==================
     private void refreshTableProduk() {
-        tableModelProduk.setRowCount(0); // Clear tabel
-        ArrayList<Product> list = productController.getAllProducts();
+        tableModelProduk.setRowCount(0); // Kosongkan tabel
+        ArrayList<Product> list = productController.ambilSemuaProduk();
         for (Product p : list) {
             tableModelProduk.addRow(new Object[]{
                     p.getIdProduk(), p.getNamaProduk(), p.getHarga(), p.getStok(), p.getKategori()
@@ -257,15 +262,10 @@ public class MainView extends JFrame {
                 return;
             }
 
-            // Penerapan Abstraksi & Polymorphism saat instansiasi
-            Product p;
-            if (kategori.equalsIgnoreCase("Makanan")) {
-                p = new FoodProduct(0, nama, harga, stok);
-            } else {
-                p = new DrinkProduct(0, nama, harga, stok);
-            }
-            
-            if (productController.addProduct(p)) {
+            // Minta Controller membuat objek produk (id 0 = biar database yang menentukan)
+            Product p = productController.buatProduk(0, nama, harga, stok, kategori);
+
+            if (productController.tambahProduk(p)) {
                 JOptionPane.showMessageDialog(this, "Produk berhasil ditambahkan!");
                 refreshTableProduk();
             } else {
@@ -289,15 +289,9 @@ public class MainView extends JFrame {
             int stok = Integer.parseInt(txtStok.getText());
             String kategori = cbKategori.getSelectedItem().toString();
 
-            // Penerapan Abstraksi & Polymorphism saat instansiasi
-            Product p;
-            if (kategori.equalsIgnoreCase("Makanan")) {
-                p = new FoodProduct(id, nama, harga, stok);
-            } else {
-                p = new DrinkProduct(id, nama, harga, stok);
-            }
-            
-            if (productController.updateProduct(p)) {
+            Product p = productController.buatProduk(id, nama, harga, stok, kategori);
+
+            if (productController.ubahProduk(p)) {
                 JOptionPane.showMessageDialog(this, "Produk berhasil diupdate!");
                 refreshTableProduk();
             } else {
@@ -313,11 +307,11 @@ public class MainView extends JFrame {
             JOptionPane.showMessageDialog(this, "Pilih data yang ingin dihapus!");
             return;
         }
-        
+
         int konfirmasi = JOptionPane.showConfirmDialog(this, "Yakin ingin menghapus produk ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
         if (konfirmasi == JOptionPane.YES_OPTION) {
             int id = Integer.parseInt(txtIdProduk.getText());
-            if (productController.deleteProduct(id)) {
+            if (productController.hapusProduk(id)) {
                 JOptionPane.showMessageDialog(this, "Produk berhasil dihapus!");
                 refreshTableProduk();
             }
@@ -327,7 +321,7 @@ public class MainView extends JFrame {
     private void cariProduk() {
         String keyword = txtCari.getText();
         tableModelProduk.setRowCount(0);
-        ArrayList<Product> list = productController.searchProduct(keyword);
+        ArrayList<Product> list = productController.cariProduk(keyword);
         for (Product p : list) {
             tableModelProduk.addRow(new Object[]{
                     p.getIdProduk(), p.getNamaProduk(), p.getHarga(), p.getStok(), p.getKategori()
@@ -338,27 +332,36 @@ public class MainView extends JFrame {
     // ================== LOGIKA TRANSAKSI ==================
     private void refreshComboProduk() {
         cbPilihProduk.removeAllItems();
-        ArrayList<Product> list = productController.getAllProducts();
-        for (Product p : list) {
-            // Tampilkan info produk di combobox
-            cbPilihProduk.addItem(p.getIdProduk() + " - " + p.getNamaProduk() + " (Stok: " + p.getStok() + ") - Rp" + p.getHarga());
+
+        // Ambil produk dari controller dan simpan di daftar memori.
+        // Urutan item combobox SAMA dengan urutan daftarProdukCombo,
+        // jadi nanti produk yang dipilih bisa diambil lewat nomor urut (index).
+        daftarProdukCombo = productController.ambilSemuaProduk();
+        for (Product p : daftarProdukCombo) {
+            cbPilihProduk.addItem(p.getNamaProduk() + " (Stok: " + p.getStok() + ") - Rp" + p.getHarga());
         }
+    }
+
+    // Mengambil objek Product yang sedang dipilih di combobox (tanpa memotong teks).
+    private Product produkTerpilih() {
+        int index = cbPilihProduk.getSelectedIndex();
+        if (index < 0 || index >= daftarProdukCombo.size()) {
+            return null;
+        }
+        return daftarProdukCombo.get(index);
     }
 
     private void hitungTotal() {
         try {
-            if (cbPilihProduk.getSelectedIndex() == -1) return;
-            
-            String selectedItem = cbPilihProduk.getSelectedItem().toString();
-            // Ekstrak harga menggunakan split sederhana (contoh mahasiswa)
-            String[] parts = selectedItem.split(" - Rp");
-            double harga = Double.parseDouble(parts[1]);
-            
+            Product produk = produkTerpilih();
+            if (produk == null) return;
+
             int jumlah = Integer.parseInt(txtJumlahBeli.getText());
-            double total = harga * jumlah;
-            
+
+            // Perhitungan diserahkan ke Controller (logika bisnis)
+            double total = transactionController.hitungTotal(produk, jumlah);
             txtTotalHarga.setText(String.valueOf(total));
-        } catch (Exception ex) {
+        } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "Jumlah beli harus angka valid!", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -367,22 +370,15 @@ public class MainView extends JFrame {
         if (txtTotalHarga.getText().isEmpty()) {
             hitungTotal(); // hitung otomatis jika belum
         }
-        
+
         try {
-            if (cbPilihProduk.getSelectedIndex() == -1) return;
-            
-            String selectedItem = cbPilihProduk.getSelectedItem().toString();
-            String[] parts = selectedItem.split(" - ");
-            int idProduk = Integer.parseInt(parts[0]);
-            
-            // Ambil nama dari bagian tengah, misal: 1 - Nasi Goreng (Stok: 50) - Rp25000.0
-            String namaDanStok = parts[1]; 
-            String namaProduk = namaDanStok.substring(0, namaDanStok.indexOf(" (Stok:"));
-            
+            Product produk = produkTerpilih();
+            if (produk == null) return;
+
             int jumlah = Integer.parseInt(txtJumlahBeli.getText());
             double total = Double.parseDouble(txtTotalHarga.getText());
-            
-            if (transactionController.processTransaction(idProduk, namaProduk, jumlah, total)) {
+
+            if (transactionController.prosesTransaksi(produk, jumlah, total)) {
                 JOptionPane.showMessageDialog(this, "Transaksi Sukses!");
                 txtJumlahBeli.setText("1");
                 txtTotalHarga.setText("");
@@ -391,10 +387,9 @@ public class MainView extends JFrame {
             } else {
                 JOptionPane.showMessageDialog(this, "Transaksi Gagal! Cek stok barang.", "Error", JOptionPane.ERROR_MESSAGE);
             }
-            
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Terjadi kesalahan!", "Error", JOptionPane.ERROR_MESSAGE);
+
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Jumlah beli harus angka valid!", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -408,12 +403,12 @@ public class MainView extends JFrame {
                     while (true) {
                         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
                         String timeNow = sdf.format(new java.util.Date());
-                        
+
                         // Update UI menggunakan SwingUtilities agar aman dari thread tabrakan
                         SwingUtilities.invokeLater(() -> {
                             lblClock.setText("Waktu: " + timeNow);
                         });
-                        
+
                         Thread.sleep(1000); // Thread di-pause selama 1 detik
                     }
                 } catch (InterruptedException e) {
@@ -428,7 +423,7 @@ public class MainView extends JFrame {
     // ================== LOGIKA RIWAYAT ==================
     private void refreshTableRiwayat() {
         tableModelRiwayat.setRowCount(0);
-        ArrayList<Transaction> list = transactionController.getAllTransactions();
+        ArrayList<Transaction> list = transactionController.ambilSemuaTransaksi();
         for (Transaction t : list) {
             tableModelRiwayat.addRow(new Object[]{
                     t.getIdTransaksi(), t.getNamaProduk(), t.getJumlahBeli(), t.getTotalHarga(), t.getTanggal()
